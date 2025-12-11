@@ -5,23 +5,150 @@
 - 概览架构与仓库结构，明确前后端插件的开发模型
 - 详述插件、页面、API 的开发流程与代码骨架（新前后端系统与经典模式）
 - 涵盖配置、实体模型、常用扩展点、构建与发布实践
+- 基于实际项目源码分析插件、页面和 API 的实现细节
 
 ## 项目与仓库结构
 
 - 应用与插件以 Yarn workspaces 管理，TypeScript 编写
 - 常见目录
-  - packages/app 前端应用入口
-  - packages/backend 后端应用入口
-  - plugins/* 前后端插件与模块包
-  - app-config*.yaml 应用配置
+  - `packages/app` - 前端应用入口，包含路由、页面组件和 API 配置
+  - `packages/backend` - 后端应用入口，包含插件注册和服务器配置
+  - `plugins/*` - 自定义前后端插件与模块包
+  - `app-config*.yaml` - 应用配置文件
+  - `examples/` - 示例实体、模板和组织数据
+  - `docs/` - 项目文档
+
+### 项目结构示例
+
+```
+my-backstage-app/
+├── packages/
+│   ├── app/                    # 前端应用
+│   │   ├── src/
+│   │   │   ├── App.tsx         # 应用主入口，路由配置
+│   │   │   ├── apis.ts         # API 工厂配置
+│   │   │   └── components/     # 自定义组件
+│   │   │       ├── catalog/    # 实体页面组件
+│   │   │       ├── Root/       # 根布局组件
+│   │   │       └── search/     # 搜索页面组件
+│   │   └── package.json
+│   └── backend/                # 后端应用
+│       ├── src/
+│       │   └── index.ts        # 后端入口，插件注册
+│       └── package.json
+├── plugins/                    # 自定义插件目录
+├── app-config.yaml             # 应用配置
+└── package.json                # 根 package.json
+```
 
 ## 开发环境
 
-- 创建应用 npx @backstage/create-app
-- 启动前端 yarn start
-- 启动后端 yarn start-backend
-- 新建前端插件 yarn new 选择 plugin
-- 新建后端插件 yarn new 选择 backend-plugin
+### 初始化项目
+
+```bash
+# 创建新的 Backstage 应用
+npx @backstage/create-app
+
+# 安装依赖
+yarn install
+```
+
+### 启动开发服务器
+
+```bash
+# 同时启动前端和后端（推荐）
+yarn start
+
+# 或者分别启动
+yarn workspace app start        # 前端：http://localhost:3000
+yarn workspace backend start    # 后端：http://localhost:7007
+```
+
+### 创建新插件
+
+```bash
+# 创建前端插件
+yarn new --select plugin
+
+# 创建后端插件
+yarn new --select backend-plugin
+
+# 创建后端模块
+yarn new --select backend-module
+```
+
+### 构建项目
+
+```bash
+# 构建所有包
+yarn build:all
+
+# 构建前端
+yarn workspace app build
+
+# 构建后端
+yarn workspace backend build
+```
+
+## 项目实际使用的插件分析
+
+### 前端插件列表
+
+基于 `packages/app/package.json`，当前项目使用的前端插件包括：
+
+1. **核心插件**
+   - `@backstage/plugin-catalog` - 软件目录插件，管理所有软件实体
+   - `@backstage/plugin-catalog-react` - Catalog React 组件库
+   - `@backstage/plugin-catalog-graph` - 目录关系图可视化
+   - `@backstage/plugin-catalog-import` - 目录导入功能
+
+2. **文档与 API**
+   - `@backstage/plugin-api-docs` - API 文档浏览
+   - `@backstage/plugin-techdocs` - 技术文档系统
+   - `@backstage/plugin-techdocs-react` - TechDocs React 组件
+
+3. **开发工具**
+   - `@backstage/plugin-scaffolder` - 软件模板脚手架
+   - `@backstage/plugin-search` - 搜索功能
+   - `@backstage/plugin-search-react` - 搜索 React 组件
+
+4. **组织与权限**
+   - `@backstage/plugin-org` - 组织管理
+   - `@backstage/plugin-permission-react` - 权限管理
+   - `@backstage/plugin-user-settings` - 用户设置
+
+5. **基础设施**
+   - `@backstage/plugin-kubernetes` - Kubernetes 集成
+   - `@backstage/plugin-notifications` - 通知系统
+   - `@backstage/plugin-signals` - 信号系统
+
+### 后端插件列表
+
+基于 `packages/backend/src/index.ts` 和 `packages/backend/package.json`：
+
+1. **核心后端插件**
+   - `@backstage/plugin-app-backend` - 应用后端服务
+   - `@backstage/plugin-proxy-backend` - 代理后端
+   - `@backstage/plugin-catalog-backend` - 目录后端服务
+
+2. **认证与权限**
+   - `@backstage/plugin-auth-backend` - 认证后端
+   - `@backstage/plugin-auth-backend-module-guest-provider` - 访客认证提供者
+   - `@backstage/plugin-permission-backend` - 权限后端
+   - `@backstage/plugin-permission-backend-module-allow-all-policy` - 允许所有策略
+
+3. **功能插件**
+   - `@backstage/plugin-scaffolder-backend` - 脚手架后端
+   - `@backstage/plugin-techdocs-backend` - TechDocs 后端
+   - `@backstage/plugin-search-backend` - 搜索后端
+   - `@backstage/plugin-kubernetes-backend` - Kubernetes 后端
+   - `@backstage/plugin-notifications-backend` - 通知后端
+   - `@backstage/plugin-signals-backend` - 信号后端
+
+4. **搜索模块**
+   - `@backstage/plugin-search-backend-module-pg` - PostgreSQL 搜索引擎
+   - `@backstage/plugin-search-backend-module-catalog` - Catalog 搜索收集器
+   - `@backstage/plugin-search-backend-module-techdocs` - TechDocs 搜索收集器
 
 ## 前端插件：新前端系统
 
@@ -255,23 +382,557 @@ export const catalogModuleExample = createBackendModule({
 })
 ```
 
+## 页面与路由系统
+
+### 应用路由配置
+
+基于 `packages/app/src/App.tsx`，应用使用 React Router 进行路由管理：
+
+```65:101:packages/app/src/App.tsx
+const routes = (
+  <FlatRoutes>
+    <Route path="/" element={<Navigate to="catalog" />} />
+    <Route path="/catalog" element={<CatalogIndexPage />} />
+    <Route
+      path="/catalog/:namespace/:kind/:name"
+      element={<CatalogEntityPage />}
+    >
+      {entityPage}
+    </Route>
+    <Route path="/docs" element={<TechDocsIndexPage />} />
+    <Route
+      path="/docs/:namespace/:kind/:name/*"
+      element={<TechDocsReaderPage />}
+    >
+      <TechDocsAddons>
+        <ReportIssue />
+      </TechDocsAddons>
+    </Route>
+    <Route path="/create" element={<ScaffolderPage />} />
+    <Route path="/api-docs" element={<ApiExplorerPage />} />
+    <Route
+      path="/catalog-import"
+      element={
+        <RequirePermission permission={catalogEntityCreatePermission}>
+          <CatalogImportPage />
+        </RequirePermission>
+      }
+    />
+    <Route path="/search" element={<SearchPage />}>
+      {searchPage}
+    </Route>
+    <Route path="/settings" element={<UserSettingsPage />} />
+    <Route path="/catalog-graph" element={<CatalogGraphPage />} />
+    <Route path="/notifications" element={<NotificationsPage />} />
+  </FlatRoutes>
+);
+```
+
+### 路由说明
+
+| 路径 | 页面 | 说明 |
+|------|------|------|
+| `/` | 重定向到 `/catalog` | 首页重定向 |
+| `/catalog` | `CatalogIndexPage` | 目录索引页 |
+| `/catalog/:namespace/:kind/:name` | `CatalogEntityPage` | 实体详情页 |
+| `/docs` | `TechDocsIndexPage` | 文档索引页 |
+| `/docs/:namespace/:kind/:name/*` | `TechDocsReaderPage` | 文档阅读页 |
+| `/create` | `ScaffolderPage` | 创建组件页面 |
+| `/api-docs` | `ApiExplorerPage` | API 文档浏览 |
+| `/catalog-import` | `CatalogImportPage` | 目录导入（需权限） |
+| `/search` | `SearchPage` | 搜索页面 |
+| `/settings` | `UserSettingsPage` | 用户设置 |
+| `/catalog-graph` | `CatalogGraphPage` | 目录关系图 |
+| `/notifications` | `NotificationsPage` | 通知页面 |
+
+### 插件路由绑定
+
+应用通过 `bindRoutes` 配置插件间的路由关联：
+
+```41:63:packages/app/src/App.tsx
+const app = createApp({
+  apis,
+  bindRoutes({ bind }) {
+    bind(catalogPlugin.externalRoutes, {
+      createComponent: scaffolderPlugin.routes.root,
+      viewTechDoc: techdocsPlugin.routes.docRoot,
+      createFromTemplate: scaffolderPlugin.routes.selectedTemplate,
+    });
+    bind(apiDocsPlugin.externalRoutes, {
+      registerApi: catalogImportPlugin.routes.importPage,
+    });
+    bind(scaffolderPlugin.externalRoutes, {
+      registerComponent: catalogImportPlugin.routes.importPage,
+      viewTechDoc: techdocsPlugin.routes.docRoot,
+    });
+    bind(orgPlugin.externalRoutes, {
+      catalogIndex: catalogPlugin.routes.catalogIndex,
+    });
+  },
+  components: {
+    SignInPage: props => <SignInPage {...props} auto providers={['guest']} />,
+  },
+});
+```
+
+### 实体页面结构
+
+实体页面通过 `EntityLayout` 和 `EntitySwitch` 实现条件渲染，支持不同类型的实体显示不同的标签页：
+
+```399:410:packages/app/src/components/catalog/EntityPage.tsx
+export const entityPage = (
+  <EntitySwitch>
+    <EntitySwitch.Case if={isKind('component')} children={componentPage} />
+    <EntitySwitch.Case if={isKind('api')} children={apiPage} />
+    <EntitySwitch.Case if={isKind('group')} children={groupPage} />
+    <EntitySwitch.Case if={isKind('user')} children={userPage} />
+    <EntitySwitch.Case if={isKind('system')} children={systemPage} />
+    <EntitySwitch.Case if={isKind('domain')} children={domainPage} />
+
+    <EntitySwitch.Case>{defaultEntityPage}</EntitySwitch.Case>
+  </EntitySwitch>
+);
+```
+
+#### Service 类型组件页面
+
+```146:189:packages/app/src/components/catalog/EntityPage.tsx
+const serviceEntityPage = (
+  <EntityLayout>
+    <EntityLayout.Route path="/" title="Overview">
+      {overviewContent}
+    </EntityLayout.Route>
+
+    <EntityLayout.Route path="/ci-cd" title="CI/CD">
+      {cicdContent}
+    </EntityLayout.Route>
+
+    <EntityLayout.Route
+      path="/kubernetes"
+      title="Kubernetes"
+      if={isKubernetesAvailable}
+    >
+      <EntityKubernetesContent />
+    </EntityLayout.Route>
+
+    <EntityLayout.Route path="/api" title="API">
+      <Grid container spacing={3} alignItems="stretch">
+        <Grid item md={6}>
+          <EntityProvidedApisCard />
+        </Grid>
+        <Grid item md={6}>
+          <EntityConsumedApisCard />
+        </Grid>
+      </Grid>
+    </EntityLayout.Route>
+
+    <EntityLayout.Route path="/dependencies" title="Dependencies">
+      <Grid container spacing={3} alignItems="stretch">
+        <Grid item md={6}>
+          <EntityDependsOnComponentsCard variant="gridItem" />
+        </Grid>
+        <Grid item md={6}>
+          <EntityDependsOnResourcesCard variant="gridItem" />
+        </Grid>
+      </Grid>
+    </EntityLayout.Route>
+
+    <EntityLayout.Route path="/docs" title="Docs">
+      {techdocsContent}
+    </EntityLayout.Route>
+  </EntityLayout>
+);
+```
+
+### 搜索页面实现
+
+搜索页面支持多种搜索类型和过滤器：
+
+```42:121:packages/app/src/components/search/SearchPage.tsx
+const SearchPage = () => {
+  const classes = useStyles();
+  const { types } = useSearch();
+  const catalogApi = useApi(catalogApiRef);
+
+  return (
+    <Page themeId="home">
+      <Header title="Search" />
+      <Content>
+        <Grid container direction="row">
+          <Grid item xs={12}>
+            <Paper className={classes.bar}>
+              <SearchBar />
+            </Paper>
+          </Grid>
+          <Grid item xs={3}>
+            <SearchType.Accordion
+              name="Result Type"
+              defaultValue="software-catalog"
+              types={[
+                {
+                  value: 'software-catalog',
+                  name: 'Software Catalog',
+                  icon: <CatalogIcon />,
+                },
+                {
+                  value: 'techdocs',
+                  name: 'Documentation',
+                  icon: <DocsIcon />,
+                },
+              ]}
+            />
+            <Paper className={classes.filters}>
+              {types.includes('techdocs') && (
+                <SearchFilter.Select
+                  className={classes.filter}
+                  label="Entity"
+                  name="name"
+                  values={async () => {
+                    // Return a list of entities which are documented.
+                    const { items } = await catalogApi.getEntities({
+                      fields: ['metadata.name'],
+                      filter: {
+                        'metadata.annotations.backstage.io/techdocs-ref':
+                          CATALOG_FILTER_EXISTS,
+                      },
+                    });
+
+                    const names = items.map(entity => entity.metadata.name);
+                    names.sort();
+                    return names;
+                  }}
+                />
+              )}
+              <SearchFilter.Select
+                className={classes.filter}
+                label="Kind"
+                name="kind"
+                values={['Component', 'Template']}
+              />
+              <SearchFilter.Checkbox
+                className={classes.filter}
+                label="Lifecycle"
+                name="lifecycle"
+                values={['experimental', 'production']}
+              />
+            </Paper>
+          </Grid>
+          <Grid item xs={9}>
+            <SearchPagination />
+            <SearchResult>
+              <CatalogSearchResultListItem icon={<CatalogIcon />} />
+              <TechDocsSearchResultListItem icon={<DocsIcon />} />
+            </SearchResult>
+          </Grid>
+        </Grid>
+      </Content>
+    </Page>
+  );
+};
+```
+
+## API 系统
+
+### 前端 API 配置
+
+前端通过 `apis.ts` 配置 API 工厂：
+
+```12:19:packages/app/src/apis.ts
+export const apis: AnyApiFactory[] = [
+  createApiFactory({
+    api: scmIntegrationsApiRef,
+    deps: { configApi: configApiRef },
+    factory: ({ configApi }) => ScmIntegrationsApi.fromConfig(configApi),
+  }),
+  ScmAuth.createDefaultApiFactory(),
+];
+```
+
+### 后端 API 端点
+
+后端通过新后端系统注册插件，每个插件可以注册自己的路由：
+
+```9:66:packages/backend/src/index.ts
+import { createBackend } from '@backstage/backend-defaults';
+
+const backend = createBackend();
+
+backend.add(import('@backstage/plugin-app-backend'));
+backend.add(import('@backstage/plugin-proxy-backend'));
+
+// scaffolder plugin
+backend.add(import('@backstage/plugin-scaffolder-backend'));
+backend.add(import('@backstage/plugin-scaffolder-backend-module-github'));
+backend.add(
+  import('@backstage/plugin-scaffolder-backend-module-notifications'),
+);
+
+// techdocs plugin
+backend.add(import('@backstage/plugin-techdocs-backend'));
+
+// auth plugin
+backend.add(import('@backstage/plugin-auth-backend'));
+// See https://backstage.io/docs/backend-system/building-backends/migrating#the-auth-plugin
+backend.add(import('@backstage/plugin-auth-backend-module-guest-provider'));
+// See https://backstage.io/docs/auth/guest/provider
+
+// catalog plugin
+backend.add(import('@backstage/plugin-catalog-backend'));
+backend.add(
+  import('@backstage/plugin-catalog-backend-module-scaffolder-entity-model'),
+);
+
+// See https://backstage.io/docs/features/software-catalog/configuration#subscribing-to-catalog-errors
+backend.add(import('@backstage/plugin-catalog-backend-module-logs'));
+
+// permission plugin
+backend.add(import('@backstage/plugin-permission-backend'));
+// See https://backstage.io/docs/permissions/getting-started for how to create your own permission policy
+backend.add(
+  import('@backstage/plugin-permission-backend-module-allow-all-policy'),
+);
+
+// search plugin
+backend.add(import('@backstage/plugin-search-backend'));
+
+// search engine
+// See https://backstage.io/docs/features/search/search-engines
+backend.add(import('@backstage/plugin-search-backend-module-pg'));
+
+// search collators
+backend.add(import('@backstage/plugin-search-backend-module-catalog'));
+backend.add(import('@backstage/plugin-search-backend-module-techdocs'));
+
+// kubernetes plugin
+backend.add(import('@backstage/plugin-kubernetes-backend'));
+
+// notifications and signals plugins
+backend.add(import('@backstage/plugin-notifications-backend'));
+backend.add(import('@backstage/plugin-signals-backend'));
+
+backend.start();
+```
+
+### 自定义后端 API 端点示例
+
+创建自定义后端插件并添加 API 端点：
+
+```typescript
+// plugins/my-plugin-backend/src/plugin.ts
+import { createBackendPlugin, coreServices } from '@backstage/backend-plugin-api';
+import express from 'express';
+
+export const myPlugin = createBackendPlugin({
+  pluginId: 'my-plugin',
+  register(env) {
+    env.registerInit({
+      deps: {
+        httpRouter: coreServices.httpRouter,
+        logger: coreServices.logger,
+      },
+      async init({ httpRouter, logger }) {
+        const router = express.Router();
+        
+        // GET /api/my-plugin/health
+        router.get('/health', (_, res) => {
+          logger.info('Health check called');
+          res.json({ status: 'ok' });
+        });
+        
+        // GET /api/my-plugin/data
+        router.get('/data', async (_, res) => {
+          const data = await fetchData();
+          res.json(data);
+        });
+        
+        httpRouter.use(router);
+      },
+    });
+  },
+});
+```
+
 ## 配置与实体模型
 
-- 配置文件 app-config.yaml, app-config.local.yaml
-- 前端通过 ConfigApi 读取配置，后端通过 config 服务读取
-- Catalog 实体示例
+### 应用配置
 
-```yaml
-apiVersion: backstage.io/v1alpha1 # Catalog 实体版本
-kind: Component # 实体类型为组件
-metadata: # 元数据部分
-  name: example-service # 组件名称，唯一标识
-  description: Example Service # 组件描述信息
-spec: # 组件规格定义
-  type: service # 组件类型，例如 service、website、library
-  lifecycle: production # 生命周期阶段，例如 experimental、production
-  owner: team-example # 负责团队或实体的标识
+配置文件位于 `app-config.yaml`，主要配置项包括：
+
+```1:114:app-config.yaml
+app:
+  title: Scaffolded Backstage App
+  baseUrl: http://localhost:3000
+
+organization:
+  name: My Company
+
+backend:
+  # Used for enabling authentication, secret is shared by all backend plugins
+  # See https://backstage.io/docs/auth/service-to-service-auth for
+  # information on the format
+  # auth:
+  #   keys:
+  #     - secret: ${BACKEND_SECRET}
+  baseUrl: http://localhost:7007
+  listen:
+    port: 7007
+    # Uncomment the following host directive to bind to specific interfaces
+    # host: 127.0.0.1
+  csp:
+    connect-src: ["'self'", 'http:', 'https:']
+    # Content-Security-Policy directives follow the Helmet format: https://helmetjs.github.io/#reference
+    # Default Helmet Content-Security-Policy values can be removed by setting the key to false
+  cors:
+    origin: http://localhost:3000
+    methods: [GET, HEAD, PATCH, POST, PUT, DELETE]
+    credentials: true
+  # This is for local development only, it is not recommended to use this in production
+  # The production database configuration is stored in app-config.production.yaml
+  database:
+    client: better-sqlite3
+    connection: ':memory:'
+  # workingDirectory: /tmp # Use this to configure a working directory for the scaffolder, defaults to the OS temp-dir
+
+integrations:
+  github:
+    - host: github.com
+      # This is a Personal Access Token or PAT from GitHub. You can find out how to generate this token, and more information
+      # about setting up the GitHub integration here: https://backstage.io/docs/integrations/github/locations#configuration
+      token: ${GITHUB_TOKEN}
+    ### Example for how to add your GitHub Enterprise instance using the API:
+    # - host: ghe.example.net
+    #   apiBaseUrl: https://ghe.example.net/api/v3
+    #   token: ${GHE_TOKEN}
+
+proxy:
+  ### Example for how to add a proxy endpoint for the frontend.
+  ### A typical reason to do this is to handle HTTPS and CORS for internal services.
+  # endpoints:
+  #   '/test':
+  #     target: 'https://example.com'
+  #     changeOrigin: true
+
+# Reference documentation http://backstage.io/docs/features/techdocs/configuration
+# Note: After experimenting with basic setup, use CI/CD to generate docs
+# and an external cloud storage when deploying TechDocs for production use-case.
+# https://backstage.io/docs/features/techdocs/how-to-guides#how-to-migrate-from-techdocs-basic-to-recommended-deployment-approach
+techdocs:
+  builder: 'local' # Alternatives - 'external'
+  generator:
+    runIn: 'docker' # Alternatives - 'local'
+  publisher:
+    type: 'local' # Alternatives - 'googleGcs' or 'awsS3'. Read documentation for using alternatives.
+
+auth:
+  # see https://backstage.io/docs/auth/ to learn about auth providers
+  providers:
+    # See https://backstage.io/docs/auth/guest/provider
+    guest: {}
+
+scaffolder:
+  # see https://backstage.io/docs/features/software-templates/configuration for software template options
+
+catalog:
+  import:
+    entityFilename: catalog-info.yaml
+    pullRequestBranchName: backstage-integration
+  rules:
+    - allow: [Component, System, API, Resource, Location]
+  locations:
+    # Local example data, file locations are relative to the backend process, typically `packages/backend`
+    - type: file
+      target: ../../examples/entities.yaml
+
+    # Local example template
+    - type: file
+      target: ../../examples/template/template.yaml
+      rules:
+        - allow: [Template]
+
+    # Local example organizational data
+    - type: file
+      target: ../../examples/org.yaml
+      rules:
+        - allow: [User, Group]
+
+    ## Uncomment these lines to add more example data
+    # - type: url
+    #   target: https://github.com/backstage/backstage/blob/master/packages/catalog-model/examples/all.yaml
+
+    ## Uncomment these lines to add an example org
+    # - type: url
+    #   target: https://github.com/backstage/backstage/blob/master/packages/catalog-model/examples/acme-corp.yaml
+    #   rules:
+    #     - allow: [User, Group]
+
+kubernetes:
+  # see https://backstage.io/docs/features/kubernetes/configuration for kubernetes configuration options
+
+# see https://backstage.io/docs/permissions/getting-started for more on the permission framework
+permission:
+  # setting this to `false` will disable permissions
+  enabled: true
 ```
+
+### Catalog 实体模型
+
+实体示例文件位于 `examples/entities.yaml`：
+
+```1:42:examples/entities.yaml
+---
+# https://backstage.io/docs/features/software-catalog/descriptor-format#kind-system
+apiVersion: backstage.io/v1alpha1
+kind: System
+metadata:
+  name: examples
+spec:
+  owner: guests
+---
+# https://backstage.io/docs/features/software-catalog/descriptor-format#kind-component
+apiVersion: backstage.io/v1alpha1
+kind: Component
+metadata:
+  name: example-website
+spec:
+  type: website
+  lifecycle: experimental
+  owner: guests
+  system: examples
+  providesApis: [example-grpc-api]
+---
+# https://backstage.io/docs/features/software-catalog/descriptor-format#kind-api
+apiVersion: backstage.io/v1alpha1
+kind: API
+metadata:
+  name: example-grpc-api
+spec:
+  type: grpc
+  lifecycle: experimental
+  owner: guests
+  system: examples
+  definition: |
+    syntax = "proto3";
+
+    service Exampler {
+      rpc Example (ExampleMessage) returns (ExampleMessage) {};
+    }
+
+    message ExampleMessage {
+      string example = 1;
+    };
+```
+
+### 实体类型说明
+
+- **Component** - 软件组件（服务、网站、库等）
+- **API** - API 定义
+- **System** - 系统，包含多个组件
+- **Domain** - 领域，包含多个系统
+- **Resource** - 资源（数据库、消息队列等）
+- **User** - 用户
+- **Group** - 用户组
+- **Location** - 位置（实体源）
+- **Template** - 软件模板
 
 ## 常用内置插件与扩展点
 
@@ -307,10 +968,195 @@ spec: # 组件规格定义
 - 明确插件与扩展命名，避免冲突
 - 后端路由默认鉴权，健康检查可匿名
 
+## 侧边栏导航配置
+
+侧边栏导航在 `packages/app/src/components/Root/Root.tsx` 中配置：
+
+```60:99:packages/app/src/components/Root/Root.tsx
+export const Root = ({ children }: PropsWithChildren<{}>) => (
+  <SidebarPage>
+    <Sidebar>
+      <SidebarLogo />
+      <SidebarGroup label="Search" icon={<SearchIcon />} to="/search">
+        <SidebarSearchModal />
+      </SidebarGroup>
+      <SidebarDivider />
+      <SidebarGroup label="Menu" icon={<MenuIcon />}>
+        {/* Global nav, not org-specific */}
+        <SidebarItem icon={HomeIcon} to="catalog" text="Home" />
+        <MyGroupsSidebarItem
+          singularTitle="My Group"
+          pluralTitle="My Groups"
+          icon={GroupIcon}
+        />
+        <SidebarItem icon={ExtensionIcon} to="api-docs" text="APIs" />
+        <SidebarItem icon={LibraryBooks} to="docs" text="Docs" />
+        <SidebarItem icon={CreateComponentIcon} to="create" text="Create..." />
+        {/* End global nav */}
+        <SidebarDivider />
+        <SidebarScrollWrapper>
+          {/* Items in this group will be scrollable if they run out of space */}
+        </SidebarScrollWrapper>
+      </SidebarGroup>
+      <SidebarSpace />
+      <SidebarDivider />
+      <NotificationsSidebarItem />
+      <SidebarDivider />
+      <SidebarGroup
+        label="Settings"
+        icon={<UserSettingsSignInAvatar />}
+        to="/settings"
+      >
+        <SidebarSettings />
+      </SidebarGroup>
+    </Sidebar>
+    {children}
+  </SidebarPage>
+);
+```
+
+## 常用扩展点与实践
+
+### 实体卡片扩展
+
+可以在实体页面中添加自定义卡片：
+
+```typescript
+import { EntityLayout } from '@backstage/plugin-catalog';
+import { MyCustomCard } from './components/MyCustomCard';
+
+const customEntityPage = (
+  <EntityLayout>
+    <EntityLayout.Route path="/" title="Overview">
+      <Grid container spacing={3}>
+        <Grid item md={6}>
+          <EntityAboutCard />
+        </Grid>
+        <Grid item md={6}>
+          <MyCustomCard /> {/* 自定义卡片 */}
+        </Grid>
+      </Grid>
+    </EntityLayout.Route>
+  </EntityLayout>
+);
+```
+
+### 条件渲染实体内容
+
+使用 `EntitySwitch` 根据实体属性条件渲染：
+
+```typescript
+import { EntitySwitch } from '@backstage/plugin-catalog';
+import { isComponentType } from '@backstage/plugin-catalog';
+
+<EntitySwitch>
+  <EntitySwitch.Case if={isComponentType('service')}>
+    <ServiceSpecificContent />
+  </EntitySwitch.Case>
+  <EntitySwitch.Case if={isComponentType('website')}>
+    <WebsiteSpecificContent />
+  </EntitySwitch.Case>
+</EntitySwitch>
+```
+
+### 搜索扩展
+
+添加自定义搜索结果类型：
+
+```typescript
+import { SearchResult } from '@backstage/plugin-search-react';
+import { MySearchResultListItem } from './components/MySearchResultListItem';
+
+<SearchResult>
+  <CatalogSearchResultListItem />
+  <TechDocsSearchResultListItem />
+  <MySearchResultListItem /> {/* 自定义搜索结果 */}
+</SearchResult>
+```
+
+## 调试与测试
+
+### 前端调试
+
+```bash
+# 启动开发服务器（支持热重载）
+yarn workspace app start
+
+# 运行前端测试
+yarn workspace app test
+
+# 运行 E2E 测试
+yarn test:e2e
+```
+
+### 后端调试
+
+```bash
+# 启动后端服务器
+yarn workspace backend start
+
+# 运行后端测试
+yarn workspace backend test
+```
+
+### 查看日志
+
+后端日志会输出到控制台，前端错误会显示在浏览器控制台。
+
+## 部署
+
+### 构建生产版本
+
+```bash
+# 构建所有包
+yarn build:all
+
+# 构建 Docker 镜像
+yarn workspace backend build-image
+```
+
+### 环境配置
+
+- `app-config.yaml` - 基础配置
+- `app-config.local.yaml` - 本地开发配置（不提交到版本控制）
+- `app-config.production.yaml` - 生产环境配置
+
+## 常见问题
+
+### 1. 插件未加载
+
+检查：
+- 插件是否在 `packages/app/src/App.tsx` 中导入
+- 后端插件是否在 `packages/backend/src/index.ts` 中注册
+- 依赖是否正确安装
+
+### 2. 实体未显示
+
+检查：
+- 实体文件是否在 `catalog.locations` 中配置
+- 实体格式是否正确
+- 后端日志是否有错误信息
+
+### 3. 搜索无结果
+
+检查：
+- 搜索后端插件是否已安装
+- 搜索引擎是否配置正确
+- 搜索收集器是否已注册
+
 ## 参考资料
 
-- https://backstage.io/docs/plugins/building-plugins/index/
-- https://backstage.io/docs/plugins/backend-plugin/
-- https://backstage.io/docs/plugins/new-backend-system/
-- https://backstage.io/docs/plugins/composability/
-- https://backstage.io/docs/reference/core-plugin-api.createrouteref/
+### 官方文档
+
+- [Backstage 官方文档](https://backstage.io/docs)
+- [插件开发指南](https://backstage.io/docs/plugins/building-plugins/index/)
+- [后端插件开发](https://backstage.io/docs/plugins/backend-plugin/)
+- [新后端系统](https://backstage.io/docs/plugins/new-backend-system/)
+- [插件组合性](https://backstage.io/docs/plugins/composability/)
+- [API 参考](https://backstage.io/docs/reference/core-plugin-api.createrouteref/)
+
+### 项目相关
+
+- [GitHub 仓库](https://github.com/backstage/backstage)
+- [插件市场](https://backstage.io/plugins)
+- [社区 Discord](https://discord.gg/backstage)
