@@ -7,6 +7,38 @@
 - 涵盖配置、实体模型、常用扩展点、构建与发布实践
 - 基于实际项目源码分析插件、页面和 API 的实现细节
 
+## 插件概念与架构
+
+- 插件是 Backstage 的功能单元，负责提供页面、API、路由与处理逻辑，可前后端协作，也可单独存在。
+- 插件由“前端插件”和“后端插件”组成，分别运行在浏览器与服务器端，通过 API 和约定进行通信。
+- 新前后端系统以“蓝图（Blueprint）/模块（Module）/扩展点（ExtensionPoint）”实现可组合架构；经典模式以 `createPlugin` + `RouteRef` 组合页面。
+- 后端采用 `createBackend` 装配模型，插件彼此通过核心服务（`coreServices`）和扩展点进行依赖注入与协作。
+
+### 插件的组成
+
+- 页面与路由：在前端提供路由绑定与页面组件（经典模式：`RoutableExtension`；新前端：`PageBlueprint`）。
+- API：前端通过 `ApiRef` 定义接口、由工厂提供实现，后端通过路由提供数据或动作。
+- 扩展点：插件之间的可协作接口，后端以 “扩展点” 模式向宿主插件注入能力（如 Catalog 处理器）。
+- 配置：插件使用应用配置（`app-config*.yaml`）读取其运行所需的参数（如鉴权、集成、存储）。
+
+### 插件生命周期（简化）
+
+- 安装与注册：在前端 `createApp` 的路由与绑定、在后端 `createBackend` 中 `backend.add()`。
+- 初始化：后端插件 `register(env)` 中的 `env.registerInit()` 执行依赖注入与路由安装；前端模块注册页面与 API。
+- 运行与交互：前端页面通过 API 调用后端路由，后端插件处理请求、返回数据或执行动作。
+- 扩展与复用：通过扩展点或外部路由绑定实现插件之间的协作与组合。
+
+### 插件间协作方式
+
+- 路由绑定：使用 `bindRoutes` 将一个插件的“外部路由”绑定到另一个插件的路由引用（如 Catalog 触达 Scaffolder）。
+- 扩展点：后端模块使用 `createBackendModule` 向宿主插件注入行为（如向 Catalog 插件注册处理器）。
+- API 依赖：前端通过 `ApiRef` 引用其他模块提供的接口实现。
+
+### 新旧两套前端系统对比
+
+- 经典模式：基于 `@backstage/core-plugin-api`，使用 `createPlugin`、`createRoutableExtension` 与 `RouteRef`，构建清晰但较“插件中心”的页面。
+- 新前端系统：基于 `@backstage/frontend-plugin-api` 与蓝图，将页面与 API 作为“前端模块”安装，强调组合性与解耦，更适合大规模模块化扩展。
+
 ## 项目与仓库结构
 
 - 应用与插件以 Yarn workspaces 管理，TypeScript 编写
@@ -20,7 +52,7 @@
 
 ### 项目结构示例
 
-```
+```text
 my-backstage-app/
 ├── packages/
 │   ├── app/                    # 前端应用
@@ -181,6 +213,14 @@ export default createFrontendModule({
 })
 ```
 
+#### 开发细节与模式选择
+
+- 模块化安装：一个前端模块可同时提供页面与 API 扩展，按需组合到应用，减少耦合。
+- 懒加载策略：`loader` 支持动态导入与代码拆分，建议页面级懒加载以优化首屏。
+- API 消费：通过 `createApiRef` + `useApi()` 获取实现，避免直接依赖具体类，便于替换与测试。
+- 组合扩展：同一 `pluginId` 下可声明多个扩展（页面、API、卡片），形成可复用的功能集。
+- 与经典模式共存：迁移期间可并行使用两套系统，逐步将经典页面改造成模块扩展。
+
 ### 前端 API 扩展
 
 ```ts
@@ -266,6 +306,12 @@ export const ExamplePage = examplePlugin.provide(
 )
 ```
 
+### 路由与导航集成示例
+
+- 在应用侧的 `createApp` 中通过 `FlatRoutes` 将经典模式的 `RoutableExtension` 绑定到具体路由；
+- 使用 `bindRoutes` 将插件间的外部路由对接（如 Catalog → Scaffolder、TechDocs），实现跨插件跳转；
+- 导航在 Root 侧边栏统一配置，建议将 Catalog、Docs、APIs、Create、Search 作为一级入口。
+
 ## 后端插件：新后端系统
 
 - 核心包 @backstage/backend-plugin-api, @backstage/backend-defaults
@@ -327,6 +373,74 @@ export async function createRouter(options: RouterOptions): Promise<express.Rout
   return router
 }
 ```
+
+### 后端开发细节
+
+- HTTP 路由前缀：建议统一以 `/api/<plugin>` 作为后端插件路由前缀，便于代理与权限控制。
+- 鉴权策略：默认路由需鉴权；通过 `httpRouter.addAuthPolicy({ path, allow: 'unauthenticated' })` 开放健康检查或公共信息。
+- 日志规范：关键请求进入、成功、失败均输出日志，便于排查；日志中包含 `pluginId` 与路径以快速定位。
+- 模块化扩展：优先通过模块扩展宿主插件（如 Catalog、Scaffolder、Search），减少改动宿主插件本体。
+
+### Scaffolder 自定义动作（后端模块）示例
+
+```ts
+import { createBackendModule, coreServices } from '@backstage/backend-plugin-api';
+import { scaffolderActionsExtensionPoint } from '@backstage/plugin-scaffolder-node';
+
+export const scaffolderModuleHello = createBackendModule({
+  pluginId: 'scaffolder',
+  moduleId: 'hello-action',
+  register(env) {
+    env.registerInit({
+      deps: { actions: scaffolderActionsExtensionPoint, logger: coreServices.logger },
+      async init({ actions, logger }) {
+        actions.addAction({
+          id: 'org:hello',
+          description: 'Print hello message',
+          async handler(ctx) {
+            const name = ctx.input?.name ?? 'Backstage';
+            logger.info(`Hello ${name}`);
+            ctx.output('message', `Hello ${name}`);
+          },
+        });
+      },
+    });
+  },
+});
+```
+
+说明：该模块把一个简单动作注册到 Scaffolder，模板可调用 `org:hello` 并在任务输出看到 `message`。
+
+### 权限与鉴权实践
+
+- 权限后端：安装 `@backstage/plugin-permission-backend` 与策略模块（如 `-allow-all-policy`）后生效；生产环境建议自定义策略模块。
+- 自定义策略（示例）：
+
+```ts
+import { createBackendModule } from '@backstage/backend-plugin-api';
+import { permissionPolicyExtensionPoint, AuthorizeResult } from '@backstage/plugin-permission-node';
+
+export const permissionModulePolicy = createBackendModule({
+  pluginId: 'permission',
+  moduleId: 'custom-policy',
+  register(env) {
+    env.registerInit({
+      deps: { policy: permissionPolicyExtensionPoint },
+      async init({ policy }) {
+        policy.setPolicy(async (_request) => ({ result: AuthorizeResult.ALLOW }));
+      },
+    });
+  },
+});
+```
+
+说明：示例将所有请求允许，通过 `AuthorizeResult` 返回不同结果可实现细粒度控制；生产应根据用户身份/资源/动作进行判定。
+
+### 搜索后端与收集器建议
+
+- 引擎选择：本地开发可用 PG 模块，生产建议使用托管 PG 实例并开启索引维护任务。
+- 收集器扩展：Catalog 与 TechDocs 收集器覆盖常见来源；可自定义收集器抓取内部系统元数据并入索引。
+- 索引字段：为常搜字段（名称、类型、owner、system、tags）建立索引并规范化，提升查询与结果质量。
 
 ### 后端装配
 
@@ -754,6 +868,95 @@ export const myPlugin = createBackendPlugin({
 
 ## 配置与实体模型
 
+## 端到端示例：自定义前后端插件
+
+### 目标
+
+- 实现一个“示例统计”插件：后端提供 `/api/my-stats/stats`，前端页面 `/stats` 展示数据。
+
+### 后端实现（插件/模块）
+
+```ts
+import { createBackendPlugin, coreServices } from '@backstage/backend-plugin-api';
+import express from 'express';
+
+export const myStatsBackend = createBackendPlugin({
+  pluginId: 'my-stats',
+  register(env) {
+    env.registerInit({
+      deps: { httpRouter: coreServices.httpRouter, logger: coreServices.logger },
+      async init({ httpRouter, logger }) {
+        const router = express.Router();
+        router.get('/stats', (_req, res) => {
+          logger.info('stats requested');
+          res.json({ services: 12, apis: 5, docs: 23 });
+        });
+        httpRouter.use('/api/my-stats', router);
+        httpRouter.addAuthPolicy({ path: '/api/my-stats/stats', allow: 'unauthenticated' });
+      },
+    });
+  },
+});
+```
+
+在 `packages/backend/src/index.ts` 安装：
+
+```ts
+backend.add(import('@org/plugin-my-stats-backend'));
+```
+
+### 前端实现（新前端系统）
+
+```ts
+import { ApiBlueprint, PageBlueprint, createFrontendModule, createApiRef } from '@backstage/frontend-plugin-api';
+
+export interface StatsApi { getStats(): Promise<{ services: number; apis: number; docs: number }>; }
+export const statsApiRef = createApiRef<StatsApi>({ id: 'plugin.stats' });
+
+class DefaultStatsApi implements StatsApi {
+  async getStats() {
+    const res = await fetch('/api/my-stats/stats');
+    return res.json();
+  }
+}
+
+const StatsApiExt = ApiBlueprint.make({ params: p => p({ factory: () => new DefaultStatsApi(), apiRef: statsApiRef }) });
+
+const StatsPage = PageBlueprint.make({
+  params: {
+    path: '/stats',
+    loader: () => import('./components/StatsPage').then(m => <m.StatsPage />),
+  },
+});
+
+export default createFrontendModule({ pluginId: 'my-stats', extensions: [StatsApiExt, StatsPage] });
+```
+
+示例页面消费 API：
+
+```tsx
+import { useApi } from '@backstage/core-plugin-api';
+import { statsApiRef } from '../api';
+
+export const StatsPage = () => {
+  const api = useApi(statsApiRef);
+  const [data, setData] = useState<{ services: number; apis: number; docs: number } | null>(null);
+  useEffect(() => { api.getStats().then(setData); }, [api]);
+  if (!data) return <Progress />;
+  return <Typography>Services: {data.services}, APIs: {data.apis}, Docs: {data.docs}</Typography>;
+};
+```
+
+### 本地试运行
+
+```bash
+yarn workspace backend start
+yarn workspace app start
+curl -s http://localhost:7007/api/my-stats/stats | jq .
+```
+
+预期：页面 `/stats` 展示后端返回的统计数据，接口返回 JSON。
+
 ### 应用配置
 
 配置文件位于 `app-config.yaml`，主要配置项包括：
@@ -947,7 +1150,7 @@ spec:
 - 前端构建 yarn build
 - 后端构建 yarn build
 - 端到端测试 Playwright，单元测试 Jest
-- 插件独立开发 yarn workspace <pkg> start
+- 插件独立开发 yarn workspace pkg start
 
 ## 发布与版本管理
 
@@ -1121,11 +1324,58 @@ yarn workspace backend build-image
 - `app-config.local.yaml` - 本地开发配置（不提交到版本控制）
 - `app-config.production.yaml` - 生产环境配置
 
+#### 运行与验证（本地）
+
+```bash
+# 启动后端
+yarn workspace backend start
+
+# 启动前端
+yarn workspace app start
+
+# （可选）验证示例统计接口
+curl -s http://localhost:7007/api/my-stats/stats | jq .
+```
+
+预期：返回 JSON 数据用于页面展示或 API 消费。
+
+## 示例统计插件集成
+
+### 集成概览
+
+- 后端插件：见 [plugins/my-stats-backend/src/plugin.ts](plugins/my-stats-backend/src/plugin.ts)
+  - 路由：`GET /api/my-stats/stats`（匿名可访问）
+  - 装配：在 [packages/backend/src/index.ts](packages/backend/src/index.ts) 安装 `@org/plugin-my-stats-backend`
+- 前端页面与 API：
+  - 页面：`/stats` → [packages/app/src/components/stats/StatsPage.tsx](packages/app/src/components/stats/StatsPage.tsx)
+  - 导航：侧边栏入口见 [packages/app/src/components/Root/Root.tsx](packages/app/src/components/Root/Root.tsx)
+  - API 工厂与标识：见 [packages/app/src/apis.ts](packages/app/src/apis.ts) 的 `statsApiRef` 与默认实现
+
+### 运行与验证（端到端）
+
+```bash
+yarn workspace backend start
+yarn workspace app start
+curl -s http://localhost:7007/api/my-stats/stats | jq .
+# 浏览器访问：http://localhost:3000/stats
+```
+
+预期：接口返回 `{"services":12,"apis":5,"docs":23}`；页面展示三张统计卡片。
+
+### 模块化与增强建议
+
+- 新前端系统模块：使用 `PageBlueprint` + `ApiBlueprint` 封装 `StatsApi` 与 `StatsPage`，以独立包安装到应用；
+- 可替换实现：为 `statsApiRef` 提供 mock 与真实实现，便于测试与环境切换；
+- 真实数据：从 Catalog/TechDocs 计算统计或缓存到数据库；
+- 权限策略：基于用户/组限制统计范围；
+- 测试质量：增加后端路由的 Jest 测试与结构化日志字段（pluginId/path/duration）。
+
 ## 常见问题
 
 ### 1. 插件未加载
 
 检查：
+
 - 插件是否在 `packages/app/src/App.tsx` 中导入
 - 后端插件是否在 `packages/backend/src/index.ts` 中注册
 - 依赖是否正确安装
@@ -1133,6 +1383,7 @@ yarn workspace backend build-image
 ### 2. 实体未显示
 
 检查：
+
 - 实体文件是否在 `catalog.locations` 中配置
 - 实体格式是否正确
 - 后端日志是否有错误信息
@@ -1140,6 +1391,7 @@ yarn workspace backend build-image
 ### 3. 搜索无结果
 
 检查：
+
 - 搜索后端插件是否已安装
 - 搜索引擎是否配置正确
 - 搜索收集器是否已注册

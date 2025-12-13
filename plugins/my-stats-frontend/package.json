@@ -1,0 +1,16 @@
+{
+  "name": "@org/plugin-my-stats-frontend",
+  "version": "0.1.0",
+  "private": true,
+  "license": "MIT",
+  "main": "src/module.ts",
+  "types": "dist-types/src/module.d.ts",
+  "dependencies": {
+    "@backstage/core-components": "*",
+    "@backstage/core-plugin-api": "*",
+    "@backstage/frontend-plugin-api": "^0.7.0",
+    "@material-ui/core": "*",
+    "@org/plugin-my-stats-client": "^0.1.0",
+    "react": "*"
+  }
+}

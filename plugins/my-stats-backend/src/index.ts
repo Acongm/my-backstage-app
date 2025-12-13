@@ -1,0 +1,1 @@
+export { myStatsBackend } from './plugin';

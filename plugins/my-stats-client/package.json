@@ -1,0 +1,11 @@
+{
+  "name": "@org/plugin-my-stats-client",
+  "version": "0.1.0",
+  "private": true,
+  "license": "MIT",
+  "main": "src/index.ts",
+  "types": "dist-types/src/index.d.ts",
+  "dependencies": {
+    "@backstage/core-plugin-api": "*"
+  }
+}
