@@ -1,0 +1,2 @@
+export { templatePluginBackend } from './plugin';
+
