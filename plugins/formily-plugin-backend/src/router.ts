@@ -102,7 +102,7 @@ export async function createRouter(options: { logger: any; database: any }) {
       res.status(200).json(row);
     } catch (e) {
       logger.error(`--- formily-plugin: update item error: ${String(e)}`);
-      res.status(500).json({ error: 'internal_error_UNIQUE_ID_12345' });
+      res.status(500).json({ error: 'internal_error' });
     }
   });
 
