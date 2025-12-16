@@ -9,31 +9,35 @@ import {
   EmptyState,
   ErrorPanel,
 } from '@backstage/core-components';
-import { Typography, Grid, Paper, Button, Dialog, DialogTitle, DialogContent, DialogActions, TextField } from '@material-ui/core';
+import { Button, Dialog, DialogTitle, DialogContent } from '@material-ui/core';
 import AddIcon from '@material-ui/icons/Add';
 import DeleteIcon from '@material-ui/icons/Delete';
 import EditIcon from '@material-ui/icons/Edit';
+import { Box } from '@mui/material';
+import Form from '@rjsf/mui';
+import validator from '@rjsf/validator-ajv8';
+import { RJSFSchema, UiSchema } from '@rjsf/utils';
 import { useApi } from '@backstage/core-plugin-api';
-import { templateApiRef } from '../api';
-import { TemplateItem, CreateItemInput, UpdateItemInput } from '@org/plugin-template-client';
+import { formilyApiRef } from '../api';
+import { FormilyItem, CreateItemInput, UpdateItemInput } from '@org/plugin-formily-client';
+import formSchema from '../../schema/schema.json';
 
 /**
  * Template 主页面组件
  * 
  * 展示所有项目，支持 CRUD 操作
  */
+const schema = formSchema as RJSFSchema;
+const uiSchema: UiSchema = {};
+
 export const TemplatePage = () => {
-  const api = useApi(templateApiRef);
-  const [items, setItems] = useState<TemplateItem[]>([]);
+  const api = useApi(formilyApiRef);
+  const [items, setItems] = useState<FormilyItem[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [dialogOpen, setDialogOpen] = useState(false);
-  const [editingItem, setEditingItem] = useState<TemplateItem | null>(null);
-  const [formData, setFormData] = useState<CreateItemInput>({
-    name: '',
-    type: '',
-    description: '',
-  });
+  const [editingItem, setEditingItem] = useState<FormilyItem | null>(null);
+  const [formData, setFormData] = useState<any>({});
 
   // 加载数据
   const loadItems = async () => {
@@ -41,7 +45,23 @@ export const TemplatePage = () => {
       setLoading(true);
       setError(null);
       const data = await api.listItems();
-      setItems(data);
+
+      const normalized = data.map(item => {
+        let metadata: any = item.metadata;
+        if (typeof metadata === 'string') {
+          try {
+            metadata = JSON.parse(metadata);
+          } catch {
+            metadata = undefined;
+          }
+        }
+        return {
+          ...item,
+          metadata,
+        } as FormilyItem;
+      });
+
+      setItems(normalized);
     } catch (e) {
       setError((e as Error).message);
     } finally {
@@ -56,35 +76,54 @@ export const TemplatePage = () => {
   // 打开创建对话框
   const handleCreate = () => {
     setEditingItem(null);
-    setFormData({ name: '', type: '', description: '' });
+    setFormData({});
     setDialogOpen(true);
   };
 
   // 打开编辑对话框
-  const handleEdit = (item: TemplateItem) => {
+  const handleEdit = (item: FormilyItem) => {
+    const meta =
+      item.metadata && typeof item.metadata === 'object' && !Array.isArray(item.metadata)
+        ? (item.metadata as any)
+        : {};
+
+    const merged = {
+      ...meta,
+      name: meta.name ?? item.name ?? '',
+      description: meta.description ?? meta.bio ?? item.description ?? '',
+      email: meta.email ?? '',
+      age: meta.age ?? '',
+      bio: meta.bio ?? meta.description ?? '',
+    };
+
     setEditingItem(item);
-    setFormData({
-      name: item.name,
-      type: item.type,
-      description: item.description || '',
-    });
+    setFormData(merged);
     setDialogOpen(true);
   };
 
   // 保存项目
-  const handleSave = async () => {
+  const handleSave = async (data: any) => {
+    const name = data.name || '未命名';
+    const description = data.bio || data.description || '';
+    const type = data.type || 'default';
+
     try {
       if (editingItem) {
-        // 更新
         const changes: UpdateItemInput = {
-          name: formData.name,
-          type: formData.type,
-          description: formData.description || null,
+          name,
+          type,
+          description: description || null,
+          metadata: data,
         };
         await api.updateItem(editingItem.id, changes);
       } else {
-        // 创建
-        await api.createItem(formData);
+        const input: CreateItemInput = {
+          name,
+          type,
+          description: description || null,
+          metadata: data,
+        };
+        await api.createItem(input);
       }
       setDialogOpen(false);
       await loadItems();
@@ -107,7 +146,7 @@ export const TemplatePage = () => {
   };
 
   // 表格列定义
-  const columns: TableColumn<TemplateItem>[] = [
+  const columns: TableColumn<FormilyItem>[] = [
     {
       title: 'ID',
       field: 'id',
@@ -124,16 +163,16 @@ export const TemplatePage = () => {
     {
       title: '描述',
       field: 'description',
-      render: (item: TemplateItem) => item.description || '-',
+      render: (item: FormilyItem) => item.description || '-',
     },
     {
       title: '创建时间',
       field: 'created_at',
-      render: (item: TemplateItem) => new Date(item.created_at).toLocaleString(),
+      render: (item: FormilyItem) => new Date(item.created_at).toLocaleString(),
     },
     {
       title: '操作',
-      render: (item: TemplateItem) => (
+      render: (item: FormilyItem) => (
         <>
           <Button
             size="small"
@@ -192,47 +231,27 @@ export const TemplatePage = () => {
           />
         )}
 
-        {/* 创建/编辑对话框 */}
         <Dialog open={dialogOpen} onClose={() => setDialogOpen(false)} maxWidth="sm" fullWidth>
           <DialogTitle>{editingItem ? '编辑项目' : '新建项目'}</DialogTitle>
           <DialogContent>
-            <Grid container spacing={2} style={{ marginTop: 8 }}>
-              <Grid item xs={12}>
-                <TextField
-                  fullWidth
-                  label="名称"
-                  value={formData.name}
-                  onChange={(e) => setFormData({ ...formData, name: e.target.value })}
-                  required
-                />
-              </Grid>
-              <Grid item xs={12}>
-                <TextField
-                  fullWidth
-                  label="类型"
-                  value={formData.type}
-                  onChange={(e) => setFormData({ ...formData, type: e.target.value })}
-                  required
-                />
-              </Grid>
-              <Grid item xs={12}>
-                <TextField
-                  fullWidth
-                  label="描述"
-                  value={formData.description}
-                  onChange={(e) => setFormData({ ...formData, description: e.target.value })}
-                  multiline
-                  rows={3}
-                />
-              </Grid>
-            </Grid>
+            <Form
+              schema={schema}
+              uiSchema={uiSchema}
+              validator={validator}
+              formData={formData}
+              onChange={e => setFormData(e.formData)}
+              onSubmit={e => handleSave(e.formData)}
+            >
+              <Box display="flex" justifyContent="flex-end" mt={2}>
+                <Button onClick={() => setDialogOpen(false)} style={{ marginRight: 8 }}>
+                  取消
+                </Button>
+                <Button type="submit" color="primary" variant="contained">
+                  保存
+                </Button>
+              </Box>
+            </Form>
           </DialogContent>
-          <DialogActions>
-            <Button onClick={() => setDialogOpen(false)}>取消</Button>
-            <Button onClick={handleSave} color="primary" variant="contained">
-              保存
-            </Button>
-          </DialogActions>
         </Dialog>
       </Content>
     </Page>

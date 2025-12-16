@@ -1,11 +1,11 @@
 {
-  "name": "@org/plugin-template-client",
+  "name": "@org/plugin-formily-client",
   "version": "0.1.0",
   "private": true,
   "license": "MIT",
   "main": "src/index.ts",
   "types": "dist-types/src/index.d.ts",
   "dependencies": {
-    "@backstage/core-plugin-api": "*"
+    "@backstage/core-plugin-api": "^1.12.0"
   }
 }

@@ -16,8 +16,8 @@ import { createRouter } from './router';
  * 
  * 2. 根据需要修改 pluginId、路由和业务逻辑
  */
-export const templatePluginBackend = createBackendPlugin({
-  pluginId: 'template',
+export const formilyPluginBackend = createBackendPlugin({
+  pluginId: 'formily',
   register(env) {
     env.registerInit({
       deps: { 
@@ -40,5 +40,5 @@ export const templatePluginBackend = createBackendPlugin({
   },
 });
 
-export default templatePluginBackend;
+export default formilyPluginBackend;
 

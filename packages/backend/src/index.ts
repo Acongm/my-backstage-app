@@ -31,5 +31,7 @@ backend.add(import('@backstage/plugin-scaffolder-backend-module-notifications'))
 
 // our custom stats plugin
 backend.add(import('@org/plugin-my-stats-backend'));
+backend.add(import('@org/plugin-template-backend'));
+backend.add(import('@org/plugin-formily-backend'));
 
 backend.start();

@@ -1,7 +1,7 @@
 import React, { useEffect, useState } from 'react';
 import { Content, Header, Page, Progress } from '@backstage/core-components';
 import { Typography, Grid, Paper } from '@material-ui/core';
-import { useApi } from '@backstage/frontend-plugin-api';
+import { useApi } from '@backstage/core-plugin-api';
 import { statsApiRef } from '../api';
 
 type Stats = { services: number; apis: number; docs: number };

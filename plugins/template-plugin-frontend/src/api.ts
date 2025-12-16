@@ -1,11 +1,10 @@
-import { createApiRef } from '@backstage/frontend-plugin-api';
 import {
   AnyApiFactory,
   createApiFactory,
   discoveryApiRef,
   identityApiRef,
   fetchApiRef,
-  createApiRef as coreCreateApiRef,
+  createApiRef,
 } from '@backstage/core-plugin-api';
 import { TemplateClient, TemplateItem, CreateItemInput, UpdateItemInput } from '@org/plugin-template-client';
 
@@ -20,19 +19,7 @@ export interface TemplateApi {
   deleteItem(id: number): Promise<void>;
 }
 
-/**
- * 新前端系统 API 引用
- */
-export const templateApiRef = createApiRef<TemplateApi>({ 
-  id: 'plugin.template.api' 
-});
-
-/**
- * 经典模式 API 引用（用于兼容）
- */
-export const templateApiRefCore = coreCreateApiRef<TemplateApi>({ 
-  id: 'plugin.template.api' 
-});
+export const templateApiRef = createApiRef<TemplateApi>({ id: 'plugin.template.api' });
 
 /**
  * API 工厂
@@ -40,7 +27,7 @@ export const templateApiRefCore = coreCreateApiRef<TemplateApi>({
  * 用于在应用中注册 API 实现
  */
 export const templateApiFactory: AnyApiFactory = createApiFactory({
-  api: templateApiRefCore,
+  api: templateApiRef,
   deps: { 
     discoveryApi: discoveryApiRef, 
     identityApi: identityApiRef, 
@@ -49,4 +36,3 @@ export const templateApiFactory: AnyApiFactory = createApiFactory({
   factory: ({ discoveryApi, identityApi, fetchApi }) =>
     new TemplateClient({ discoveryApi, identityApi, fetchApi }),
 });
-

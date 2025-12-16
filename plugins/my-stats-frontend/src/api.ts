@@ -1,11 +1,10 @@
-import { createApiRef } from '@backstage/frontend-plugin-api'
 import {
   AnyApiFactory,
   createApiFactory,
   discoveryApiRef,
   identityApiRef,
   fetchApiRef,
-  createApiRef as coreCreateApiRef,
+  createApiRef,
 } from '@backstage/core-plugin-api'
 import { MyStatsClient } from '@org/plugin-my-stats-client'
 
@@ -51,10 +50,8 @@ export interface StatsApi {
 
 export const statsApiRef = createApiRef<StatsApi>({ id: 'plugin.my-stats.api' })
 
-export const statsApiRefCore = coreCreateApiRef<StatsApi>({ id: 'plugin.my-stats.api' })
-
 export const statsApiFactory: AnyApiFactory = createApiFactory({
-  api: statsApiRefCore,
+  api: statsApiRef,
   deps: { discoveryApi: discoveryApiRef, identityApi: identityApiRef, fetchApi: fetchApiRef },
   factory: ({ discoveryApi, identityApi, fetchApi }) =>
     new MyStatsClient({ discoveryApi, identityApi, fetchApi }),

@@ -1,0 +1,17 @@
+{
+  "name": "@org/plugin-formily",
+  "version": "0.1.0",
+  "main": "src/module.ts",
+  "types": "dist-types/module.d.ts",
+  "dependencies": {
+    "@rjsf/core": "^5.19.0",
+    "@rjsf/mui": "^5.19.0",
+    "@rjsf/utils": "^5.19.0",
+    "@rjsf/validator-ajv8": "^5.19.0"
+  },
+  "peerDependencies": {
+    "@backstage/core-plugin-api": "^1.0.0",
+    "react": "^18.0.2",
+    "react-dom": "^18.0.2"
+  }
+}

@@ -1,1 +1,2 @@
-export { statsApiFactory, statsApiRefCore } from './api'
+export { StatsPage } from './components/StatsPage';
+export { statsApiFactory, statsApiRef } from './api';

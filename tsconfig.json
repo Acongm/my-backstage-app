@@ -12,6 +12,18 @@
   "compilerOptions": {
     "outDir": "dist-types",
     "rootDir": ".",
-    "jsx": "react-jsx"
+    "jsx": "react-jsx",
+    "baseUrl": ".",
+    "paths": {
+      "@org/plugin-my-stats-client": ["plugins/my-stats-client/src"],
+      "@org/plugin-my-stats-frontend": ["plugins/my-stats-frontend/src/module.ts"],
+      "@org/plugin-my-stats-backend": ["plugins/my-stats-backend/src"],
+      "@org/plugin-template-client": ["plugins/template-plugin-client/src"],
+      "@org/plugin-template-frontend": ["plugins/template-plugin-frontend/src/module.ts"],
+      "@org/plugin-template-backend": ["plugins/template-plugin-backend/src"],
+      "@org/plugin-formily-client": ["plugins/formily-plugin-client/src"],
+      "@org/plugin-formily": ["plugins/formily-plugin/src/module.ts"],
+      "@org/plugin-formily-backend": ["plugins/formily-plugin-backend/src"]
+    }
   }
 }

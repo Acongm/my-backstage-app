@@ -7,6 +7,8 @@
   },
   "scripts": {
     "start": "NODE_OPTIONS=--no-node-snapshot backstage-cli repo start",
+    "start:frontend": "yarn workspace app start",
+    "start:backend": "yarn workspace backend start",
     "build:backend": "yarn workspace backend build",
     "build:all": "backstage-cli repo build --all",
     "build-image": "yarn workspace backend build-image",

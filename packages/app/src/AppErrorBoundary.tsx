@@ -1,17 +1,14 @@
-import '@backstage/cli/asset-types';
 import React, { Component, ReactNode } from 'react';
-import ReactDOM from 'react-dom/client';
-import App from './App';
-import '@backstage/ui/css/styles.css';
 
-class ErrorBoundary extends Component<{ children: ReactNode }, { error: Error | null; stack: string }> {
+type State = { error: Error | null; stack: string };
+
+export class AppErrorBoundary extends Component<{ children: ReactNode }, State> {
   constructor(props: { children: ReactNode }) {
     super(props);
     this.state = { error: null, stack: '' };
   }
   componentDidCatch(error: Error, info: { componentStack: string }) {
     this.setState({ error, stack: info.componentStack });
-    // eslint-disable-next-line no-console
     console.error(error, info.componentStack);
   }
   render() {
@@ -27,9 +24,3 @@ class ErrorBoundary extends Component<{ children: ReactNode }, { error: Error | 
     return this.props.children;
   }
 }
-
-ReactDOM.createRoot(document.getElementById('root')!).render(
-  <ErrorBoundary>
-    <App />
-  </ErrorBoundary>,
-);

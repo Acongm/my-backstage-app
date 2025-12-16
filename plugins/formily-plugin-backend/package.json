@@ -1,8 +1,8 @@
 {
-  "name": "@org/plugin-template-backend",
+  "name": "@org/plugin-formily-backend",
   "version": "0.1.0",
-  "main": "src/plugin.ts",
-  "types": "dist-types/src/plugin.d.ts",
+  "main": "src/index.ts",
+  "types": "dist-types/src/index.d.ts",
   "license": "MIT",
   "private": true,
   "engines": {
